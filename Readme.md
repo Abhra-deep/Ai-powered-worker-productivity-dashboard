@@ -1,29 +1,127 @@
-# AI-Powered Worker Productivity Dashboard
+# AI Powered Worker Productivity Dashboard
 
-## Architecture
-Edge CCTV → AI CV Model → Event JSON → FastAPI Backend → SQLite → React Dashboard
+## GitHub Repository
+https://github.com/Abhra-deep/Ai-powered-worker-productivity-dashboard
 
-## Event Handling
-- Duplicate events: ignored via timestamp + worker + station
-- Out-of-order events: sorted by timestamp
-- Intermittent connectivity: events are append-only
+---
 
-## Metrics
-- Active time = count of "working" events
-- Idle time = count of "idle" events
-- Units produced = sum(product_count)
-- Utilization = active / (active + idle)
+## Web Application Link
+- **Backend:** http://127.0.0.1:8000  
+- **Frontend:** http://localhost:5173  
 
-## Scaling
-- SQLite → Postgres
-- Single site → multi-site via tenant_id
-- Kafka for event ingestion
+---
 
-## Model Lifecycle
-- Model version stored per event
-- Drift detected via confidence decay
-- Retraining triggered by threshold alerts
+## Architecture Overview
+AI CCTV Cameras
+→ JSON Events
+→ FastAPI Backend
+→ SQLite Database
+→ React Dashboard
 
-## Run Locally
+
+AI cameras generate structured events.  
+The backend ingests and stores these events, computes productivity metrics, and exposes APIs.  
+The frontend fetches these metrics and displays them in a dashboard.
+
+---
+
+## Database Schema
+
+### Workers
+| Field | Description |
+|------|------------|
+| worker_id | Unique worker ID |
+| name | Worker name |
+
+### Workstations
+| Field | Description |
+|------|------------|
+| station_id | Unique workstation ID |
+| name | Station name/type |
+
+### Events
+| Field | Description |
+|------|------------|
+| timestamp | Event timestamp |
+| worker_id | Worker reference |
+| workstation_id | Workstation reference |
+| event_type | working / idle / absent / product_count |
+| confidence | AI model confidence |
+| count | Units produced (product_count only) |
+
+---
+
+## Metric Definitions
+
+### Worker Level
+- **Total Active Time:** count of `working` events  
+- **Total Idle Time:** count of `idle` events  
+- **Utilization:**
+working / (working + idle)
+
+- **Total Units Produced:** sum of `product_count`  
+- **Units per Hour:** total units / active events  
+
+### Workstation Level
+- **Occupancy Time:** number of events at station  
+- **Utilization:** active events / total events  
+- **Total Units Produced:** sum of production events  
+- **Throughput:** units produced per active event  
+
+### Factory Level
+- **Total Productive Time:** sum of all working events  
+- **Total Production Count:** sum of all product_count values  
+- **Average Utilization:** average worker utilization  
+- **Average Production Rate:** production / productive time  
+
+---
+
+## Assumptions and Trade-offs
+
+### Assumptions
+- Events represent fixed time slices  
+- AI-generated events are trusted  
+- One worker per workstation per event  
+
+### Trade-offs
+- Event-count-based time instead of duration-based  
+- SQLite used for simplicity  
+- No real-time streaming  
+
+---
+
+## Theoretical Questions
+
+### Intermittent Connectivity
+Events are stored when received. Late-arriving events are processed normally during metric calculation.
+
+### Duplicate Events
+Events can be deduplicated using:
+worker_id + workstation_id + timestamp + event_type
+
+
+### Out-of-order Timestamps
+Events are sorted by timestamp before computing metrics.
+
+### Model Versioning, Drift, Retraining
+- Add `model_version` field to events  
+- Monitor confidence, idle time, and production trends  
+- Trigger retraining when sustained drift is detected  
+
+---
+
+## Running Locally
+
+### Backend
 ```bash
-docker-compose up --build
+cd backend/app
+pip install fastapi uvicorn sqlalchemy pydantic
+uvicorn app:app --reload
+Frontend
+cd frontend
+npm install
+npm run dev
+Author
+Abhra Deep
+GitHub: https://github.com/Abhra-deep
+
