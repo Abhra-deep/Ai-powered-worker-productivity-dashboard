@@ -18,10 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Root health check
+# ✅ Root health check (ONLY ONE)
 @app.get("/")
 def root():
-    return {"status": "API is running"}
+    return {
+        "message": "AI Powered Worker Productivity Dashboard API is live",
+        "docs": "/docs",
+        "health": "OK"
+    }
 
 def get_db():
     db = SessionLocal()
@@ -78,12 +82,4 @@ def factory_metrics(db: Session = Depends(get_db)):
         "total_productive_time": productive,
         "total_units": units,
         "avg_utilization": productive / max(len(events), 1)
-    }
-
-@app.get("/")
-def root():
-    return {
-        "message": "AI Powered Worker Productivity Dashboard API is live",
-        "docs": "/docs",
-        "health": "OK"
     }
