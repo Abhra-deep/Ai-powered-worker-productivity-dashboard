@@ -18,11 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Root health check
-@app.get("/")
-def root():
-    return {"status": "API is running"}
-
 def get_db():
     db = SessionLocal()
     try:
