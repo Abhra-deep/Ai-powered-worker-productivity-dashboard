@@ -79,3 +79,11 @@ def factory_metrics(db: Session = Depends(get_db)):
         "total_units": units,
         "avg_utilization": productive / max(len(events), 1)
     }
+
+@app.get("/")
+def root():
+    return {
+        "message": "AI Powered Worker Productivity Dashboard API is live",
+        "docs": "/docs",
+        "health": "OK"
+    }
