@@ -1,11 +1,8 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from .database import SessionLocal, engine
-from .models import Base, AIEvent
-from .schemas import EventCreate
-from .seed import seed_data
 
+# DB setup stuff here
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Productivity Dashboard")
@@ -18,14 +15,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Root health check (ONLY ONE)
+# ✅ SINGLE root route
 @app.get("/")
 def root():
     return {
         "message": "AI Powered Worker Productivity Dashboard API is live",
         "docs": "/docs",
-        "health": "OK"
+        "health": "/health"
     }
+
+@app.get("/health")
+def health():
+    return {"status": "OK"}
 
 def get_db():
     db = SessionLocal()
@@ -82,15 +83,4 @@ def factory_metrics(db: Session = Depends(get_db)):
         "total_productive_time": productive,
         "total_units": units,
         "avg_utilization": productive / max(len(events), 1)
-    }
-
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-def root():
-    return {
-        "status": "success",
-        "message": "Biz-Tech Analytics – Technical Assessment API is running"
     }
