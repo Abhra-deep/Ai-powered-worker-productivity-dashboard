@@ -6,38 +6,26 @@ https://github.com/Abhra-deep/Ai-powered-worker-productivity-dashboard
 ---
 
 ## Web Application Link
-- **Backend:** http://127.0.0.1:8000  
-- **Frontend:** http://localhost:5173  
+- **Backend (Deployed):** https://ai-powered-worker-productivity-dashboard-nhn0.onrender.com
+- **API Docs:** https://ai-powered-worker-productivity-dashboard-nhn0.onrender.com/docs
+- **Frontend (Local):** http://localhost:5173  
 
 ---
 
 ## Architecture Overview
-AI CCTV Cameras
-→ JSON Events
-→ FastAPI Backend
-→ SQLite Database
-→ React Dashboard
-
+AI CCTV Cameras  
+→ JSON Events  
+→ FastAPI Backend  
+→ SQLite Database  
+→ React Dashboard  
 
 AI cameras generate structured events.  
-The backend ingests and stores these events, computes productivity metrics, and exposes APIs.  
+The backend ingests and stores these events, computes productivity metrics, and exposes REST APIs.  
 The frontend fetches these metrics and displays them in a dashboard.
 
 ---
 
 ## Database Schema
-
-### Workers
-| Field | Description |
-|------|------------|
-| worker_id | Unique worker ID |
-| name | Worker name |
-
-### Workstations
-| Field | Description |
-|------|------------|
-| station_id | Unique workstation ID |
-| name | Station name/type |
 
 ### Events
 | Field | Description |
@@ -56,23 +44,15 @@ The frontend fetches these metrics and displays them in a dashboard.
 ### Worker Level
 - **Total Active Time:** count of `working` events  
 - **Total Idle Time:** count of `idle` events  
-- **Utilization:**
-working / (working + idle)
-
+- **Utilization:**  
+  `working / (working + idle)`
 - **Total Units Produced:** sum of `product_count`  
 - **Units per Hour:** total units / active events  
 
-### Workstation Level
-- **Occupancy Time:** number of events at station  
-- **Utilization:** active events / total events  
-- **Total Units Produced:** sum of production events  
-- **Throughput:** units produced per active event  
-
 ### Factory Level
 - **Total Productive Time:** sum of all working events  
-- **Total Production Count:** sum of all product_count values  
-- **Average Utilization:** average worker utilization  
-- **Average Production Rate:** production / productive time  
+- **Total Production Count:** sum of all `product_count` values  
+- **Average Utilization:** productive / total events  
 
 ---
 
@@ -93,7 +73,7 @@ working / (working + idle)
 ## Theoretical Questions
 
 ### Intermittent Connectivity
-Events are stored when received. Late-arriving events are processed normally during metric calculation.
+Late-arriving events are stored and processed during metric computation.
 
 ### Duplicate Events
 Events can be deduplicated using:
@@ -106,7 +86,7 @@ Events are sorted by timestamp before computing metrics.
 ### Model Versioning, Drift, Retraining
 - Add `model_version` field to events  
 - Monitor confidence, idle time, and production trends  
-- Trigger retraining when sustained drift is detected  
+- Retrain when sustained drift is detected  
 
 ---
 
@@ -114,9 +94,9 @@ Events are sorted by timestamp before computing metrics.
 
 ### Backend
 ```bash
-cd backend/app
-pip install fastapi uvicorn sqlalchemy pydantic
-uvicorn app:app --reload
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 Frontend
 cd frontend
 npm install
@@ -125,3 +105,14 @@ Author
 Abhra Deep
 GitHub: https://github.com/Abhra-deep
 
+
+---
+
+## 🚀 Final Steps (VERY IMPORTANT)
+
+Run these commands now:
+
+```bash
+git add README.md
+git commit -m "Update README with deployed backend link"
+git push
