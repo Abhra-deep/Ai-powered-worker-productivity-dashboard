@@ -83,3 +83,14 @@ def factory_metrics(db: Session = Depends(get_db)):
         "total_units": units,
         "avg_utilization": productive / max(len(events), 1)
     }
+
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def root():
+    return {
+        "status": "success",
+        "message": "Biz-Tech Analytics – Technical Assessment API is running"
+    }
