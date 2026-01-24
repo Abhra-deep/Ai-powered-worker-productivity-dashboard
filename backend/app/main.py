@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+
 from .database import SessionLocal, engine
 from .models import Base, AIEvent
 from .schemas import EventCreate
@@ -11,7 +12,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Productivity Dashboard")
 
-# CORS (important if React frontend is deployed later)
+# CORS (important for deployed frontend)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Root endpoint so the base URL doesn’t return 404
+# Root endpoint (prevents 404 on base URL)
 @app.get("/")
 def root():
     return {
@@ -29,7 +30,7 @@ def root():
         "docs": "/docs"
     }
 
-# Optional health check
+# Health check
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -41,6 +42,7 @@ def get_db():
     finally:
         db.close()
 
+# Ingest AI events
 @app.post("/events")
 def ingest_event(event: EventCreate, db: Session = Depends(get_db)):
     db_event = AIEvent(**event.dict())
@@ -48,33 +50,72 @@ def ingest_event(event: EventCreate, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "event ingested"}
 
+# Seed dummy data
 @app.post("/seed")
 def seed(db: Session = Depends(get_db)):
     seed_data(db)
     return {"status": "database seeded"}
 
+# ---------------- WORKER METRICS ----------------
 @app.get("/metrics/workers")
 def worker_metrics(db: Session = Depends(get_db)):
     events = db.query(AIEvent).all()
     metrics = {}
+
     for e in events:
-        m = metrics.setdefault(e.worker_id, {"active_time": 0, "idle_time": 0, "units": 0})
+        m = metrics.setdefault(
+            e.worker_id,
+            {"active_time": 0, "idle_time": 0, "units": 0}
+        )
+
         if e.event_type == "working":
             m["active_time"] += 1
         elif e.event_type == "idle":
             m["idle_time"] += 1
+
         if e.event_type == "product_count":
             m["units"] += e.count or 0
+
     for m in metrics.values():
         total = m["active_time"] + m["idle_time"]
         m["utilization"] = (m["active_time"] / total) * 100 if total else 0
+
     return metrics
 
+# ---------------- WORKSTATION METRICS (NEW) ----------------
+@app.get("/metrics/workstations")
+def workstation_metrics(db: Session = Depends(get_db)):
+    events = db.query(AIEvent).all()
+    metrics = {}
+
+    for e in events:
+        m = metrics.setdefault(
+            e.workstation_id,
+            {"active_time": 0, "idle_time": 0, "units": 0}
+        )
+
+        if e.event_type == "working":
+            m["active_time"] += 1
+        elif e.event_type == "idle":
+            m["idle_time"] += 1
+
+        if e.event_type == "product_count":
+            m["units"] += e.count or 0
+
+    for m in metrics.values():
+        total = m["active_time"] + m["idle_time"]
+        m["utilization"] = (m["active_time"] / total) * 100 if total else 0
+        m["throughput"] = m["units"] / m["active_time"] if m["active_time"] else 0
+
+    return metrics
+
+# ---------------- FACTORY METRICS ----------------
 @app.get("/metrics/factory")
 def factory_metrics(db: Session = Depends(get_db)):
     events = db.query(AIEvent).all()
     productive = sum(1 for e in events if e.event_type == "working")
     units = sum(e.count or 0 for e in events)
+
     return {
         "total_productive_time": productive,
         "total_units": units,
