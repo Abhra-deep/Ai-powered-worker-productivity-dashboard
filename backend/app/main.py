@@ -1,12 +1,17 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from .database import SessionLocal, engine
+from .models import Base, AIEvent
+from .schemas import EventCreate
+from .seed import seed_data
 
-# DB setup stuff here
+# Ensure tables are created
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Productivity Dashboard")
 
+# CORS (important if React frontend is deployed later)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,18 +20,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ SINGLE root route
+# Root endpoint so the base URL doesn’t return 404
 @app.get("/")
 def root():
     return {
-        "message": "AI Powered Worker Productivity Dashboard API is live",
-        "docs": "/docs",
-        "health": "/health"
+        "status": "success",
+        "message": "AI Powered Worker Productivity Dashboard API is running",
+        "docs": "/docs"
     }
 
+# Optional health check
 @app.get("/health")
 def health():
-    return {"status": "OK"}
+    return {"status": "ok"}
 
 def get_db():
     db = SessionLocal()
@@ -51,26 +57,17 @@ def seed(db: Session = Depends(get_db)):
 def worker_metrics(db: Session = Depends(get_db)):
     events = db.query(AIEvent).all()
     metrics = {}
-
     for e in events:
-        m = metrics.setdefault(e.worker_id, {
-            "active_time": 0,
-            "idle_time": 0,
-            "units": 0
-        })
-
+        m = metrics.setdefault(e.worker_id, {"active_time": 0, "idle_time": 0, "units": 0})
         if e.event_type == "working":
             m["active_time"] += 1
         elif e.event_type == "idle":
             m["idle_time"] += 1
-
         if e.event_type == "product_count":
             m["units"] += e.count or 0
-
     for m in metrics.values():
         total = m["active_time"] + m["idle_time"]
         m["utilization"] = (m["active_time"] / total) * 100 if total else 0
-
     return metrics
 
 @app.get("/metrics/factory")
@@ -78,7 +75,6 @@ def factory_metrics(db: Session = Depends(get_db)):
     events = db.query(AIEvent).all()
     productive = sum(1 for e in events if e.event_type == "working")
     units = sum(e.count or 0 for e in events)
-
     return {
         "total_productive_time": productive,
         "total_units": units,
